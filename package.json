@@ -1,0 +1,13 @@
+﻿{
+  "name": "deep-seek-documental",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SaaS multi-tenant para gestão documental e conciliação financeira",
+  "scripts": {
+    "dev": "echo 'Instale as dependências primeiro'",
+    "setup": "npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
