@@ -1,4 +1,4 @@
-﻿# Deep Seek Documental - SaaS de Gestão Documental e Conciliação
+# Deep Seek Documental - SaaS de Gestão Documental e Conciliação
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -50,4 +50,3 @@ npm install
 
 # Execute
 npm run dev
-
