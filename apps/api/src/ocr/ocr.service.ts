@@ -195,13 +195,7 @@ export class OcrService {
     return data;
   }
 
-  private async identifyEntity(tenantId: string, data: any): Promise<any> {
-    if (data.nif) {
-      const supplier = await this.prisma.supplier.findFirst({
-        where: { tenantId, nif: data.nif },
-      });
-      if (supplier) return supplier;
-    }
+    private async identifyEntity(tenantId: string, data: any): Promise<any> {
     return null;
   }
 

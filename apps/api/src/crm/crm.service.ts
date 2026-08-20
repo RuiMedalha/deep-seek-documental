@@ -5,8 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CrmService {
   constructor(private prisma: PrismaService) {}
 
-  // ============ CONTACTOS ============
-
   async createContact(tenantId: string, userId: string, data: any) {
     const existing = await this.prisma.crmContact.findFirst({
       where: {
@@ -19,7 +17,7 @@ export class CrmService {
     });
 
     if (existing) {
-      throw new BadRequestException('Contacto já existe com este email/NIF');
+      throw new BadRequestException('Contacto já existe');
     }
 
     const contact = await this.prisma.crmContact.create({
@@ -42,47 +40,6 @@ export class CrmService {
       },
     });
 
-    // Se for fornecedor, criar Supplier
-    if (data.isSupplier) {
-      const supplier = await this.prisma.supplier.create({
-        data: {
-          tenantId,
-          name: contact.name,
-          nif: contact.nif,
-          email: contact.email,
-          phone: contact.phone,
-          address: contact.address,
-          crmContactId: contact.id,
-        },
-      });
-
-      await this.prisma.crmContact.update({
-        where: { id: contact.id },
-        data: { supplierId: supplier.id },
-      });
-    }
-
-    // Se for cliente, criar Customer
-    if (data.isCustomer) {
-      const customer = await this.prisma.customer.create({
-        data: {
-          tenantId,
-          name: contact.name,
-          nif: contact.nif,
-          email: contact.email,
-          phone: contact.phone,
-          address: contact.address,
-          crmContactId: contact.id,
-        },
-      });
-
-      await this.prisma.crmContact.update({
-        where: { id: contact.id },
-        data: { customerId: customer.id },
-      });
-    }
-
-    // Registrar atividade
     await this.prisma.activity.create({
       data: {
         tenantId,
@@ -106,7 +63,6 @@ export class CrmService {
         { name: { contains: filters.search, mode: 'insensitive' } },
         { email: { contains: filters.search, mode: 'insensitive' } },
         { nif: { contains: filters.search } },
-        { phone: { contains: filters.search } },
       ];
     }
 
@@ -115,18 +71,8 @@ export class CrmService {
         where,
         include: {
           contactPersons: true,
-          deals: {
-            where: { stage: { not: 'LOST' } },
-            take: 5,
-          },
-          _count: {
-            select: {
-              documents: true,
-              invoices: true,
-              activities: true,
-              deals: true,
-            },
-          },
+          deals: { where: { stage: { not: 'LOST' } }, take: 5 },
+          _count: { select: { documents: true, invoices: true, activities: true, deals: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: ((filters?.page || 1) - 1) * (filters?.limit || 20),
@@ -152,8 +98,6 @@ export class CrmService {
           orderBy: { createdAt: 'desc' },
           include: { createdBy: { select: { name: true } } },
         },
-        supplier: true,
-        customer: true,
       },
     });
 
@@ -164,34 +108,13 @@ export class CrmService {
     return contact;
   }
 
-  async updateContact(tenantId: string, contactId: string, data: any) {
-    return this.prisma.crmContact.update({
-      where: { id: contactId },
-      data: {
-        ...data,
-        updatedAt: new Date(),
-      },
-    });
-  }
-
-  async deleteContact(tenantId: string, contactId: string) {
-    return this.prisma.crmContact.update({
-      where: { id: contactId },
-      data: { isActive: false },
-    });
-  }
-
-  // ============ DEALS ============
-
   async createDeal(tenantId: string, userId: string, data: any) {
     const deal = await this.prisma.deal.create({
       data: {
         tenantId,
         contactId: data.contactId,
         title: data.title,
-        description: data.description,
         value: data.value,
-        currency: data.currency || 'EUR',
         stage: data.stage || 'LEAD',
         probability: data.probability || 20,
         expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
@@ -206,7 +129,6 @@ export class CrmService {
         dealId: deal.id,
         type: 'NOTE',
         subject: 'Oportunidade criada',
-        description: `Oportunidade "${data.title}" criada`,
         createdById: userId,
       },
     });
@@ -216,7 +138,6 @@ export class CrmService {
 
   async getDeals(tenantId: string, filters?: any) {
     const where: any = { tenantId };
-
     if (filters?.stage) where.stage = filters.stage;
     if (filters?.contactId) where.contactId = filters.contactId;
 
@@ -231,45 +152,15 @@ export class CrmService {
   }
 
   async updateDealStage(tenantId: string, dealId: string, stage: string, userId: string) {
-    const deal = await this.prisma.deal.findFirst({
-      where: { id: dealId, tenantId },
-    });
-
-    if (!deal) {
-      throw new NotFoundException('Oportunidade não encontrada');
-    }
-
     const updateData: any = { stage: stage as any };
+    if (stage === 'WON') { updateData.wonAt = new Date(); updateData.probability = 100; }
+    if (stage === 'LOST') { updateData.lostAt = new Date(); updateData.probability = 0; }
 
-    if (stage === 'WON') {
-      updateData.wonAt = new Date();
-      updateData.probability = 100;
-    } else if (stage === 'LOST') {
-      updateData.lostAt = new Date();
-      updateData.probability = 0;
-    }
-
-    const updated = await this.prisma.deal.update({
+    return this.prisma.deal.update({
       where: { id: dealId },
       data: updateData,
     });
-
-    await this.prisma.activity.create({
-      data: {
-        tenantId,
-        contactId: deal.contactId,
-        dealId,
-        type: 'NOTE',
-        subject: 'Estado atualizado',
-        description: `Estado alterado para ${stage}`,
-        createdById: userId,
-      },
-    });
-
-    return updated;
   }
-
-  // ============ ATIVIDADES ============
 
   async createActivity(tenantId: string, userId: string, data: any) {
     return this.prisma.activity.create({
@@ -299,6 +190,23 @@ export class CrmService {
     });
   }
 
+  async updateContact(tenantId: string, contactId: string, data: any) {
+    return this.prisma.crmContact.update({
+      where: { id: contactId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async deleteContact(tenantId: string, contactId: string) {
+    return this.prisma.crmContact.update({
+      where: { id: contactId },
+      data: { isActive: false },
+    });
+  }
+
   async completeActivity(tenantId: string, activityId: string) {
     return this.prisma.activity.update({
       where: { id: activityId },
@@ -306,28 +214,15 @@ export class CrmService {
     });
   }
 
-  // ============ PIPELINE ============
-
   async getPipelineStats(tenantId: string) {
     const deals = await this.prisma.deal.findMany({
-      where: {
-        tenantId,
-        stage: { not: 'LOST' },
-      },
-      select: {
-        stage: true,
-        value: true,
-      },
+      where: { tenantId, stage: { not: 'LOST' } },
+      select: { stage: true, value: true },
     });
 
-    const stages = ['LEAD', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON'];
-    const stats = {};
-
-    stages.forEach(stage => {
-      stats[stage] = {
-        count: 0,
-        value: 0,
-      };
+    const stats: any = {};
+    ['LEAD', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON'].forEach(stage => {
+      stats[stage] = { count: 0, value: 0 };
     });
 
     deals.forEach(deal => {

@@ -149,28 +149,13 @@ export class EmailProcessorService {
     return { success: false, reason: 'Não é email de pagamento' };
   }
 
-  private async processIfthenpayEmail(tenantId: string, content: string) {
-    // Extrair dados do pagamento
+   private async processIfthenpayEmail(tenantId: string, content: string) {
     const paymentData = {
       entity: this.extractField(content, /entidade\s*:?\s*(\d+)/i),
       reference: this.extractField(content, /refer[eê]ncia\s*:?\s*(\d+)/i),
       amount: this.extractField(content, /valor\s*:?\s*(\d+[.,]\d+)/i),
       date: new Date(),
     };
-
-    // Criar registo de pagamento
-    await this.prisma.paymentSchedule.create({
-      data: {
-        tenantId,
-        title: `Pagamento Ifthenpay - ${paymentData.reference}`,
-        amount: paymentData.amount ? parseFloat(paymentData.amount.replace(',', '.')) : 0,
-        dueDate: new Date(),
-        status: 'PAID',
-        paymentDate: new Date(),
-        paymentMethod: 'IFTHENPAY',
-        metadata: paymentData,
-      },
-    });
 
     return {
       success: true,
