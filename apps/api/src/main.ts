@@ -8,10 +8,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // CORS
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-  });
+app.enableCors({
+  origin: true,
+  credentials: true,
+});
 
   // Validação global
   app.useGlobalPipes(
