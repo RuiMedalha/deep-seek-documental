@@ -11,7 +11,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportsModule } from './reports/reports.module';
 import { ExportModule } from './export/export.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { SecurityModule } from './security/security.module';
+import { OcrModule } from './ocr/ocr.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 
@@ -39,7 +39,7 @@ import { BullModule } from '@nestjs/bull';
     ReportsModule,
     ExportModule,
     NotificationsModule,
-    SecurityModule,
+    OcrModule,
   ],
 })
 export class AppModule {}
