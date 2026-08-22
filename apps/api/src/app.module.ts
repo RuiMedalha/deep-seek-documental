@@ -15,6 +15,7 @@ import { OcrModule } from './ocr/ocr.module';
 import { EmailModule } from './email-processing/email.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -43,5 +44,6 @@ import { BullModule } from '@nestjs/bull';
     OcrModule,
     EmailModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

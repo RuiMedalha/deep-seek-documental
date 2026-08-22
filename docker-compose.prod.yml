@@ -4,19 +4,21 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: saas_docs
-      POSTGRES_PASSWORD: saas_docs_password
-      POSTGRES_DB: saas_docs
+      POSTGRES_USER: ${POSTGRES_USER:-saas_docs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-saas_docs}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U saas_docs"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saas_docs}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -26,12 +28,16 @@ services:
   api:
     build: ./apps/api
     environment:
-      DATABASE_URL: postgresql://saas_docs:saas_docs_password@postgres:5432/saas_docs?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me}
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-saas_docs}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-saas_docs}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?defina JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?defina JWT_REFRESH_SECRET}
       PORT: 4000
       FRONTEND_URL: ${FRONTEND_URL:-https://your-domain.com}
+    volumes:
+      - api_uploads:/app/uploads
     ports:
       - "4000:4000"
     depends_on:
@@ -39,11 +45,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   web:
-    build: ./apps/web
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.your-domain.com}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.your-domain.com}
+      NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:
@@ -51,3 +66,5 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
+  api_uploads:

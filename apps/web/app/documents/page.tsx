@@ -75,7 +75,7 @@ export default function DocumentsPage() {
   });
 
   const getStatusBadge = (status: string) => {
-    const config = {
+    const config: Record<string, { color: string; label: string; icon: typeof Clock }> = {
       NOVO: { color: 'bg-blue-100 text-blue-700', label: 'Novo', icon: Clock },
       PROCESSADO: { color: 'bg-green-100 text-green-700', label: 'Processado', icon: CheckCircle },
       EM_REVISAO: { color: 'bg-yellow-100 text-yellow-700', label: 'Em Revisão', icon: AlertCircle },
