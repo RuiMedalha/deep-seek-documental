@@ -1,3 +1,4 @@
+import { AiModule } from './ai/ai.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
@@ -42,6 +43,7 @@ import { BullModule } from '@nestjs/bull';
     NotificationsModule,
     OcrModule,
     EmailModule,
+    AiModule,
   ],
 })
 export class AppModule {}
