@@ -11,41 +11,35 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U saas_docs"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   api:
     build: ./apps/api
     environment:
       DATABASE_URL: postgresql://saas_docs:saas_docs_password@postgres:5432/saas_docs?schema=public
       REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-deep-seek-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-deep-seek-refresh}
       PORT: 4000
-      FRONTEND_URL: ${FRONTEND_URL:-https://your-domain.com}
-    ports:
-      - "4000:4000"
+      FRONTEND_URL: ${FRONTEND_URL:-*}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_URL: ${OLLAMA_URL:-}
+      TOCONLINE_API_KEY: ${TOCONLINE_API_KEY:-}
+      TOCONLINE_USERNAME: ${TOCONLINE_USERNAME:-}
+      TOCONLINE_PASSWORD: ${TOCONLINE_PASSWORD:-}
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   web:
     build: ./apps/web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.your-domain.com}
-    ports:
-      - "3000:3000"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
     depends_on:
       - api
 
