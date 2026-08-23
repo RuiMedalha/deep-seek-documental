@@ -1,40 +1,53 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: saas-docs-postgres
     environment:
       POSTGRES_USER: saas_docs
       POSTGRES_PASSWORD: saas_docs_password
       POSTGRES_DB: saas_docs
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saas_docs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: saas-docs-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  minio:
-    image: minio/minio:latest
-    container_name: saas-docs-minio
-    command: server /data --console-address ":9001"
+  api:
+    build: ./apps/api
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      DATABASE_URL: postgresql://saas_docs:saas_docs_password@postgres:5432/saas_docs?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me}
+      PORT: 4000
+      FRONTEND_URL: ${FRONTEND_URL:-https://your-domain.com}
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.your-domain.com}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
-  redis_data:
-  minio_data:
