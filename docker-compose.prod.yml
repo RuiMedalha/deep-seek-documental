@@ -1,4 +1,4 @@
-services:
+﻿services:
   postgres:
     image: postgres:16-alpine
     environment:
@@ -21,10 +21,10 @@ services:
     environment:
       DATABASE_URL: postgresql://saas_docs:saas_docs_password@postgres:5432/saas_docs?schema=public
       REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-deep-seek-secret}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-deep-seek-refresh}
+      JWT_ACCESS_SECRET: 
+      JWT_REFRESH_SECRET: 
       PORT: 4000
-      FRONTEND_URL: ${FRONTEND_URL:-*}
+      FRONTEND_URL: 
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
   web:
     build: ./apps/web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_API_URL: 
     depends_on:
       - api
 
