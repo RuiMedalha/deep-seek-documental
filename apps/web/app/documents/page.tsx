@@ -81,7 +81,7 @@ export default function DocumentsPage() {
       EM_REVISAO: { color: 'bg-yellow-100 text-yellow-700', label: 'Em Revisão', icon: AlertCircle },
       ARQUIVADO: { color: 'bg-gray-100 text-gray-700', label: 'Arquivado', icon: FileText },
     };
-    const c = config[status] || config.NOVO;
+    const c = (config as any)[status] || config.NOVO;
     const Icon = c.icon;
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.color}`}>
